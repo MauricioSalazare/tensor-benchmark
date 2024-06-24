@@ -1,0 +1,21 @@
+{
+    "_about": "This file stores the mapping between the terms used in tensorpowerflow and powergridmodel",
+    "pgm": {
+      "slack_bus": "N.A.",
+      "susceptance": "b1",
+      "serial_resistance": "r1",
+      "serial_reactance": "x1",
+      "transformer_ratio": "N.A.",
+      "active_power_injection": "p",
+      "reactive_power_injection": "q"
+    },
+    "tpf": {
+      "slack_bus": "Tb",
+      "susceptance": "B",
+      "serial_resistance": "R",
+      "serial_reactance": "X",
+      "transformer_ratio": "TAP",
+      "active_power_injection": "PD",
+      "reactive_power_injection": "QD"
+    }
+}
