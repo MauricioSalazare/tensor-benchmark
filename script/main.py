@@ -173,7 +173,7 @@ if __name__ == "__main__":
         ax_.set_ylim(-0.1e-2, 40)
 
     plt.suptitle(f"Power flows: 10_000")
-    # plt.savefig("graph.pdf")
+    plt.savefig("graph.pdf")
     plt.show()
 
 
