@@ -46,7 +46,6 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
 
     load_scaling_min = 0.5
     load_scaling_max = 1.5
-    # n_step = 10_000
 
     # gen grid data
     fictional_dataset = generate_fictional_grid(
@@ -137,10 +136,11 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
 
 if __name__ == "__main__":
     # exp_options = [[n_feeder, n_node_per_feeder]]
+    N_STEPS = 100
     exp_options = [[20, 1], [20, 5], [20, 10], [20, 20], [20, 25], [30, 20], [20, 50]]
     n_nodes, results = [], []
     for option in exp_options:
-        res = experiment(option[0], option[1], n_step=10_000)
+        res = experiment(option[0], option[1], n_step=N_STEPS)
         n_nodes.append(option[0] * option[1])
         results.append(pd.DataFrame(res))
     exp_results = pd.concat(results, axis=0)
@@ -170,9 +170,9 @@ if __name__ == "__main__":
         ax_.grid()
         ax_.set_xlabel("Number of Nodes")
         ax_.set_ylabel("Time (s)")
-        ax_.set_ylim(-0.1e-2, 40)
+        # ax_.set_ylim(-0.1e-2, 40)
 
-    plt.suptitle(f"Power flows: 10_000")
+    plt.suptitle(f"Power flows: {N_STEPS}")
     plt.savefig("graph.pdf")
     plt.show()
 
