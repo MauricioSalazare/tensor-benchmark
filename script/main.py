@@ -130,7 +130,6 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
         log_print(f"TensorPowerFlow.{tpf_algorithm}: {end - start}")
 
         assert np.allclose(voltage_results_pgm, np.abs(result["v"][0, :])), "PGM and TensorPF does not match."
-    # log_print(f"TensorPowerFlow instancing: {tpf_time_end - tpf_time_start}")
 
     pgm_results = dict(zip(power_flow.pgm_algorithms, res_pgm))
     tpf_results = dict(zip(power_flow.tpf_algorithms, res_tpf))
