@@ -5,6 +5,7 @@ import warnings
 from time import time, perf_counter
 import pandas as pd
 import matplotlib
+
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from itertools import product
@@ -13,8 +14,11 @@ import power_grid_model as pgm
 from grid_gen import generate_fictional_grid
 from power_grid_model.validation import errors_to_string, validate_batch_data, validate_input_data
 from tensorpowerflow import GridTensor
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
+import platform
+from datetime import datetime
 
 
 class power_flow:
@@ -26,7 +30,7 @@ class power_flow:
     }
     tpf = {
         "tensor": "TPF Tensor",
-        "hp-tensor": "TPF Tensor-Sparse",
+        # "hp-tensor": "TPF Tensor-Sparse",
     }
     pgm_algorithms = list(product(["pgm"], pgm.values()))
     tpf_algorithms = list(product(["tpf"], tpf.values()))
@@ -136,45 +140,54 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
 
 if __name__ == "__main__":
     # exp_options = [[n_feeder, n_node_per_feeder]]
-    N_STEPS = 100
+    N_STEPS = [10, 100, 1_000, 10_000, 50_000]
     exp_options = [[20, 1], [20, 5], [20, 10], [20, 20], [20, 25], [30, 20], [20, 50]]
-    n_nodes, results = [], []
-    for option in exp_options:
-        res = experiment(option[0], option[1], n_step=N_STEPS)
-        n_nodes.append(option[0] * option[1])
-        results.append(pd.DataFrame(res))
-    exp_results = pd.concat(results, axis=0)
-    exp_results.index = n_nodes
+
+    results_exp = None
+    for n_steps in tqdm(N_STEPS):
+        result_nodes = None
+        for option in exp_options:
+            res = experiment(option[0], option[1], n_step=n_steps)
+            result_frame = pd.DataFrame(res | {("nodes", ""): option[0] * option[1], ("n_steps", ""): n_steps})
+            result_nodes = pd.concat([result_nodes, result_frame], axis=0, ignore_index=True)
+        results_exp = pd.concat([results_exp, result_nodes], axis=0, ignore_index=True)
+
+    results_exp.to_pickle("../data/results.pkl")
 
     # %%
-    fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
+    results_exp = pd.read_pickle("../data/results.pkl")
+    steps = results_exp["n_steps"].unique()
+    n_steps = len(steps)
+
+    fig, ax = plt.subplots(1, len(results_exp["n_steps"].unique()), figsize=(20, 3.5))
     plt.subplots_adjust(wspace=0.3, right=0.95, top=0.90, bottom=0.15)
 
-    pgm_color = 0
-    tpf_color = 0
     line_styles = ["-", "--", ":", "-."]
-    for algo, result in exp_results.T.iterrows():
-        if algo[0] == "pgm":
-            color = plt.cm.tab20c(pgm_color)
-            line_style = line_styles[pgm_color]
-            pgm_color += 1
-        else:
-            color = plt.cm.tab20c(tpf_color + 4)
-            line_style = line_styles[tpf_color]
-            tpf_color += 1
-        ax[0].semilogy(result.index, result.values, linewidth=1.8, marker=".", label=algo[1], linestyle=line_style, color=color)
-        ax[1].plot(result.index, result.values, linewidth=1.8, marker=".", label=algo[1], linestyle=line_style, color=color)
+    for ii, n_steps in tqdm(enumerate(steps)):
+        pgm_color = 0
+        tpf_color = 0
+        exp_results = results_exp[results_exp["n_steps"] == n_steps].drop("n_steps", axis=1)
+        exp_results.set_index("nodes", inplace=True)
+        for algo, result in exp_results.T.iterrows():
+            print(algo)
+            if algo[0] == "pgm":
+                color = plt.cm.tab20c(pgm_color)
+                line_style = line_styles[pgm_color]
+                pgm_color += 1
+            else:
+                color = plt.cm.tab20c(tpf_color + 4)
+                line_style = line_styles[tpf_color]
+                tpf_color += 1
+            ax[ii].semilogy(
+                result.index, result.values, linewidth=1.8, marker=".", label=algo[1], linestyle=line_style, color=color
+            )
+            ax[ii].set_title(f"Power flows: {n_steps}")
 
     for ax_ in ax:
         ax_.legend(fontsize="xx-small", handlelength=2.5)
         ax_.grid()
         ax_.set_xlabel("Number of Nodes")
         ax_.set_ylabel("Time (s)")
-        # ax_.set_ylim(-0.1e-2, 40)
 
-    plt.suptitle(f"Power flows: {N_STEPS}")
-    plt.savefig("graph.pdf")
+    plt.savefig(f"../data/benchmark_{platform.system()}_{datetime.now().strftime('%a%H%M%S')}.pdf")
     plt.show()
-
-
-
