@@ -30,7 +30,7 @@ class power_flow:
     }
     tpf = {
         "tensor": "TPF Tensor",
-        # "hp-tensor": "TPF Tensor-Sparse",
+        "hp-tensor": "TPF Tensor-Sparse",
     }
     pgm_algorithms = list(product(["pgm"], pgm.values()))
     tpf_algorithms = list(product(["tpf"], tpf.values()))
@@ -44,8 +44,10 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
     # fictional grid parameters
     cable_length_km_min = 0.8
     cable_length_km_max = 1.2
-    load_p_w_min = 0.4e6 * 0.8
-    load_p_w_max = 0.4e6 * 1.2
+    # load_p_w_min = 0.4e6 * 0.8
+    # load_p_w_max = 0.4e6 * 1.2
+    load_p_w_min = 0.4e6 * 0.001
+    load_p_w_max = 0.4e6 * 0.001
     pf = 0.95
 
     load_scaling_min = 0.5
@@ -123,6 +125,7 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
             reactive_power=tpf_time_series_q,
             algorithm=tpf_algorithm,
             tolerance=1e-6,
+            sparse_solver="pardiso",
         )
         assert result["convergence"], "TPF did not converge. Check results."
         end = time()
@@ -139,22 +142,26 @@ def experiment(n_feeder=20, n_node_per_feeder=50, n_step=1_000, log=False):
 
 if __name__ == "__main__":
     # exp_options = [[n_feeder, n_node_per_feeder]]
-    N_STEPS = [10, 100, 1_000, 10_000, 50_000]
-    exp_options = [[20, 1], [20, 5], [20, 10], [20, 20], [20, 25], [30, 20], [20, 50]]
+    # N_STEPS = [10, 100, 1_000, 10_000, 50_000]
+    N_STEPS = [10, 100, 1_000, 5_000]
+    # exp_options = [[20, 1], [20, 5], [20, 10], [20, 20], [20, 25], [30, 20], [20, 50]]
+    exp_options = [[20, 1], [20, 5], [20, 10], [20, 20], [20, 25], [30, 20], [20, 50], [40, 50], [60, 50], [80, 50], [100, 50], [100,60]]
 
     results_exp = None
     for n_steps in tqdm(N_STEPS):
+        print(f"N_STEPS: {n_steps}")
         result_nodes = None
         for option in exp_options:
+            print(f"Nodes: {option[0]*option[1]}")
             res = experiment(option[0], option[1], n_step=n_steps)
             result_frame = pd.DataFrame(res | {("nodes", ""): option[0] * option[1], ("n_steps", ""): n_steps})
             result_nodes = pd.concat([result_nodes, result_frame], axis=0, ignore_index=True)
         results_exp = pd.concat([results_exp, result_nodes], axis=0, ignore_index=True)
 
-    results_exp.to_pickle("../data/results.pkl")
+    results_exp.to_pickle("../data/results_windows.pkl")
 
     # %%
-    results_exp = pd.read_pickle("../data/results.pkl")
+    results_exp = pd.read_pickle("../data/results_windows.pkl")
     steps = results_exp["n_steps"].unique()
     n_steps = len(steps)
 
